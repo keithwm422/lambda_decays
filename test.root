@@ -1,0 +1,7 @@
+void test()
+{
+	for (float x = 0; x < 2; x+=0.1)
+	{
+		cout << x << endl;
+	}
+}

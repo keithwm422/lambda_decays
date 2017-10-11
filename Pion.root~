@@ -1,0 +1,85 @@
+// This code will help verify if the polarization found in lambda frame should be below the mixed frame. 
+#include <TRandom>
+#include <TMath>
+#include <TVector3>
+#include <TLorentzVector>
+
+
+float Isaac(TLorentzVector Pproton_four); // Pass the 4 vector, construct the spin vector, dot it with the angular momentum
+
+float Lambda(TLorentzVector Pproton_four, TVector3 Boosting);	// Pass it the 4 vector, construct the spin vector, boost the angular momentum to the lambda frame and dot it
+
+float Lab(TLorentzVector Pproton_four, TVector3 Boosting);	// Pass it the 4 vector, construct the spin vector, boost it to the lab and dot it
+
+void Pion();
+
+int main ()
+{
+	Pion();
+	return 0;
+}
+
+
+
+Pion()
+{
+	float pi = 3.14159265358979323846;
+	TProfile *pols = new TProfile ("Polarization", "Polarization", 3, 0, 2);
+	float beta = 0.5;
+	TRandom *rand = new TRandom(0);
+	float proton_mass =0.94; //GeV
+	float pion_mass = 0.14;
+	for(int i = 0; i <= 5000; i++)
+	{	
+		for(float phi = 0; phi < 2.*pi; phi += pi/1000.)
+		{
+			float PhiLam= rand->Uniform(0,2*pi);
+			float ThetaLam = rand->Uniform(-1, 1);
+			float SThetaLam = sqrt(1-ThetaLam*ThetaLam);
+			TVector3 Pproton(proton_mass*ThetaLam*TMath::Cos(PhiLam), proton_mass*SThetaLam*TMath::Sin(PhiLam), proton_mass*ThetaLam);
+			TVector3 Ppion(-Pproton);
+			TVector3 Boosting(beta*TMath::Cos(PhiLam), beta*TMath::Sin(PhiLam), 0);
+			TLorentzVector Pproton_four(Pproton, sqrt(proton_mass*proton_mass+Pproton.Mag2()));
+			TLorentzVector Ppion_four(Ppion,sqrt(pion_mass*pion_mass+Ppion.Mag2()));
+			Pproton_four.Boost(Boosting);
+			Ppion_four.Boost(Boosting);
+			if (Ppion_four.Perp() < 0.2) continue;
+			pols->Fill(0,Isaac(Pproton_four));	
+			pols->Fill(1,Lambda(Pproton_four, Boosting));
+			pols->Fill(2,Lab(Pproton_four, Boosting));
+		}
+	}
+	pols->Draw();
+	
+}
+
+Isaac(Pproton_four)
+{
+	float Polarization = 0.0;
+	TVector3 spin(0.5*Pproton_four.Vect());
+	TVector3 Angular(0.6,0.8, 0.0);
+	Polarization = Angular.Dot(spin)/(Angular.Mag()*spin.Mag());
+	return Polarization;
+}
+
+Lambda(Pproton_four, Boosting)
+{
+	float Polarization = 0.0;
+	TVector3 spin(0.5*Pproton_four.Vect());
+	TVector3 Angular(0.6,0.8, 0.0);
+	TLorentzVector Angular_four(0, Angular);
+	Angular_four.Boost(Boosting);
+	Polarization = spin.Dot(Angular_four.Vect())/((Angular_four.Vect()).Mag()*spin.Mag());
+	return Polarization;
+}
+
+Lab(Pproton_four, Boosting)
+{	
+	float Polarization = 0.0;
+	TVector3 spin(0.5*Pproton_four.Vect());
+	TVector3 Angular(0.6,0.8, 0.0);
+	TLorentzVector spin_four (0, spin);
+	spin_four.Boost(Boosting);
+	Polarization = (spin_four.Vect()).Dot(Angular)/(Angular.Mag()*(spin_four.Vect()).Mag());
+	return Polarization;
+}
